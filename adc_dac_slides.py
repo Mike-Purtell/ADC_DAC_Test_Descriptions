@@ -65,14 +65,14 @@ def _(mo):
         start=-1.0,
         stop=1.0,
         step=0.001,
-        value=0.02,
+        value=0.2,
         label="Simulated bow (V at mid-scale)",
     )
     p1_noise = mo.ui.number(
         start=0.0,
         stop=1.0,
         step=0.0001,
-        value=0.002,
+        value=0.02,
         label="Gaussian noise sigma (V)",
     )
     p1_fit_mode = mo.ui.radio(
@@ -402,11 +402,22 @@ def _(
     mag_db_2 = 10.0 * np.log10(np.maximum(power_2, 1e-30))
     mag_db_2 -= np.max(mag_db_2)
 
-    n_time_2 = min(1000, n_2)
+    # Plot the full capture span so the displayed periods match the selected value.
+    max_plot_points_2 = 2000
+    if n_2 > max_plot_points_2:
+        plot_idx_2 = np.linspace(0, n_2 - 1, num=max_plot_points_2, dtype=int)
+        plot_idx_2 = np.unique(plot_idx_2)
+    else:
+        plot_idx_2 = np.arange(n_2)
+
+    # Add the endpoint at t = n/fs with the starting value to visualize full coherent cycles.
+    t_plot_2 = np.append(t_2[plot_idx_2], n_2 / fs_2)
+    y_plot_2 = np.append(quant_wave_2[plot_idx_2], quant_wave_2[0])
+
     fig2a = px.line(
-        x=t_2[:n_time_2] * 1e6,
-        y=quant_wave_2[:n_time_2],
-        title="Quantized DAC Sine Wave (Time Domain)",
+        x=t_plot_2 * 1e6,
+        y=y_plot_2,
+        title="Quantized DAC Sine Wave (Full Capture, Time Domain)",
         labels={"x": "Time (us)", "y": "Voltage (V)"},
     )
     fig2a.update_traces(line=dict(width=1.5))
