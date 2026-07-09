@@ -1,7 +1,10 @@
 import marimo
 
-__generated_with = "0.23.13"
-app = marimo.App(width="medium")
+__generated_with = "0.23.9"
+app = marimo.App(
+    width="medium",
+    layout_file="layouts/adc_dac_slides.slides.json",
+)
 
 
 @app.cell
@@ -21,7 +24,23 @@ def _():
 def _(mo):
     mo.md("""
     # DAC/ADC Presentation Notebook
-    Use the tabs below to walk through four paginated test descriptions.
+    Use the slide deck below to walk through four test sections.
+
+    ## 1. Ideal DAC Behavior and LSB Definition
+    A DAC with **N bits** has $2^N$ possible digital codes. The ideal analog output is:
+
+    $V_{ideal}(k) = V_{offset} + k \cdot LSB$
+
+    Where:
+
+    - **LSB (Least Significant Bit)** is the ideal step size:
+      $LSB =
+    rac{V_{FS} - V_{offset}}{2^N - 1}$
+    - $k$ is the digital input code ($0$ to $2^N - 1$)
+    - $V_{FS}$ is the full-scale output voltage
+    - $V_{offset}$ is the output at code $0$
+
+    All linearity metrics are typically expressed in **LSB units**, making them independent of the DAC's absolute voltage range.
     """)
     return
 
@@ -71,7 +90,7 @@ def _(mo):
 
     p1_controls = mo.vstack(
         [
-            mo.md("## Page 1: DAC Linearity"),
+            mo.md("## Slide 2: DAC Transfer Curve"),
             mo.hstack([p1_vmin, p1_vmax, p1_resolution]),
             mo.hstack([p1_bow, p1_noise, p1_seed]),
             p1_fit_mode,
@@ -246,7 +265,7 @@ def _(
     # Keep output manageable for very high resolutions.
     p1_show_df = p1_df if p1_df.height <= 4096 else p1_df.head(4096)
     p1_dnl_show_df = p1_dnl_df if p1_dnl_df.height <= 4096 else p1_dnl_df.head(4096)
-    return fig1, fig1_dnl, fig1_inl, p1_dnl_show_df, p1_show_df
+    return fig1, fig1_dnl, fig1_inl, p1_show_df
 
 
 @app.cell
@@ -295,7 +314,7 @@ def _(mo):
 
     p2_controls = mo.vstack(
         [
-            mo.md("## Page 2: DAC Sine Wave Tests"),
+            mo.md("## Slide 5: DAC Sine Wave Tests"),
             mo.hstack([p2_vmin, p2_vmax, p2_resolution]),
             mo.hstack([p2_periods, p2_samples, p2_fs]),
         ]
@@ -412,10 +431,37 @@ def _(
 
 @app.cell
 def _(mo):
-    # Pages 3 and 4 placeholders for presentation flow.
+    endpoint_vs_best_fit = mo.vstack(
+        [
+            mo.md(
+                """
+                ## Slide 3: Endpoint vs Best-Fit Line Ideal Models
+                When comparing measured DAC outputs to \"ideal\" values, two common reference models are used:
+
+                ### **Endpoint Method**
+
+                - Draw a straight line between the measured output at **code 0** and **code full-scale**.
+                - Assumes the DAC should perfectly hit both endpoints.
+                - Sensitive to noise or measurement error at the endpoints.
+                - Often used in datasheets for simplicity.
+
+                ### **Best-Fit Line Method**
+
+                - Perform a **least-squares linear regression** on all measured output points.
+                - Produces an \"ideal\" line that best matches the overall behavior.
+                - Reduces sensitivity to endpoint noise.
+                - Often used in precision characterization.
+
+                Both methods produce slightly different INL and gain/offset error values.
+                """
+            )
+        ]
+    )
+
+    # Slides 6 and 7 placeholders for presentation flow.
     page3 = mo.vstack(
         [
-            mo.md("## Page 3: DAC Dynamic Linearity (Placeholder)"),
+            mo.md("## Slide 6: DAC Dynamic Linearity (Placeholder)"),
             mo.md(
                 "Add IMD, glitch impulse, settling behavior, or code-transition test content here."
             ),
@@ -424,47 +470,65 @@ def _(mo):
 
     page4 = mo.vstack(
         [
-            mo.md("## Page 4: ADC Validation Summary (Placeholder)"),
+            mo.md("## Slide 7: ADC Validation Summary (Placeholder)"),
             mo.md(
                 "Add ADC histogram tests, ENOB sweep, and final pass/fail summary charts here."
             ),
         ]
     )
-    return page3, page4
+    return endpoint_vs_best_fit, page3, page4
 
 
 @app.cell
-def _(
-    fig1,
-    fig1_dnl,
-    fig1_inl,
-    fig2a,
-    fig2b,
-    metrics_2,
-    mo,
-    p1_controls,
-    p1_dnl_show_df,
-    p1_show_df,
-    p2_controls,
-    page3,
-    page4,
-):
+def _(fig1, mo, p1_controls, p1_show_df):
     page1 = mo.vstack(
         [
             p1_controls,
-            fig1,
-            fig1_inl,
-            fig1_dnl,
-            mo.md("### Voltage for output codes"),
-            mo.ui.table(p1_show_df),
-            mo.md("### DNL by transition"),
-            mo.ui.table(p1_dnl_show_df),
+            mo.hstack(
+                [
+                    fig1,
+                    mo.vstack(
+                        [
+                            mo.md("### Voltage for output codes"),
+                            mo.ui.table(p1_show_df),
+                        ]
+                    ),
+                ],
+                widths=[3, 2],
+            ),
             mo.md(
                 "Displaying up to 4096 rows for performance. Increase resolution carefully for live demos."
             ),
         ]
     )
 
+    page1
+    return
+
+
+@app.cell
+def _(endpoint_vs_best_fit):
+    endpoint_vs_best_fit
+    return
+
+
+@app.cell
+def _(fig1_dnl, fig1_inl, mo):
+    page1_linearity = mo.vstack(
+        [
+            mo.md("## Slide 4: DAC INL and DNL"),
+            mo.hstack([fig1_inl, fig1_dnl]),
+            # mo.md("### DNL by transition"),
+            # mo.ui.table(p1_dnl_show_df),
+        ]
+    )
+
+    page1_linearity
+    return
+
+
+@app.cell
+def _(fig2a, fig2b, metrics_2, mo, p2_controls):
     page2 = mo.vstack(
         [
             p2_controls,
@@ -475,16 +539,19 @@ def _(
         ]
     )
 
-    tabs = mo.ui.tabs(
-        {
-            "1. DAC Linearity": page1,
-            "2. DAC Sine Tests": page2,
-            "3. ADC Linearity": page3,
-            "4. ADC Sine Tests": page4,
-        }
-    )
+    page2
+    return
 
-    mo.vstack([mo.md("## Presentation Pages"), tabs])
+
+@app.cell
+def _(page3):
+    page3
+    return
+
+
+@app.cell
+def _(page4):
+    page4
     return
 
 
